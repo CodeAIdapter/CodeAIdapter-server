@@ -1,0 +1,16 @@
+# gcp credentials
+.key/*
+!.key/.gitkeep
+
+# poetry
+.venv
+poetry.lock
+
+# vscode
+.vscode
+
+# env
+.env
+
+# python cache
+__pycache__
