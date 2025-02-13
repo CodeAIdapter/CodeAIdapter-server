@@ -11,7 +11,7 @@ app = Flask(__name__)
 @app.route("/")
 def index():
     return "Hello, World!"
-
+ 
 @app.route("/api", methods=["POST"])
 def api_analyze():
     try:
@@ -25,8 +25,8 @@ def api_analyze():
             "message": "Analysis completed",
             "data": {
                 "prompt": code_request.prompt,
-                "analyzed_files": len(code_request.files),
-                "folder_path": code_request.folder_path
+                "analyzed_files": 1 if code_request.file else 0,
+                "file_name": code_request.file.get("name") if code_request.file else None
             }
         }
         
