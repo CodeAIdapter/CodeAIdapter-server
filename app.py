@@ -2,6 +2,7 @@ import os
 import sys
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from dataclasses import dataclass
 from typing import List, Optional
 from utils.llm.openai import OpenAIChat
@@ -18,6 +19,7 @@ intro = """CodeAIdapter 是一款旨在協助開發者更有效率地解決程�
 無論您是新手還是資深開發者，CodeAIdapter 都能幫助您更輕鬆地應對各種程式挑戰！"""
 
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 @app.route("/")
 def index():
@@ -26,7 +28,8 @@ def index():
 @app.route("/api", methods=["POST"])
 def api_analyze():
     try:
-        data = request.get_json()
+        data = request.get_json(force=True)
+        print("Received data:", data)  # 打印接收到的數據
         code_request = CodeRequest(
             prompt=data.get("prompt"),
             file=data.get("file"),
@@ -78,6 +81,10 @@ def api_analyze():
                 "prompt": "您的需求已被分類為：{}\n\n".format(cs[class_code])
             }
         }
+
+        print("Prompt:", code_request.prompt)
+        print("File:", code_request.file)
+
         
         return jsonify(response), 200
         
