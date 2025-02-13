@@ -5,3 +5,4 @@ from dataclasses import dataclass
 class CodeRequest:
     prompt: str
     file: Optional[str]
+    filename: Optional[str]
