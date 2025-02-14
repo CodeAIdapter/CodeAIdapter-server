@@ -36,15 +36,23 @@ def deploy_handle(prompt: str, filename: str, file_content: str) -> CodeResponse
     Returns:
         CodeResponse: A response object containing deployment status, logs, and file information.
     """
+    service_name = f"codeaidapter-{str(uuid.uuid4())}"
+
     # Extract code content from the file
     code_content = code_extract(filename=filename, code_content=file_content)
-    dockerfile_content = generate_dockerfile(filename=filename, code_content=code_content)
-    config_yaml_content = generate_config_yaml(prompt=prompt)
+    dockerfile_content = generate_dockerfile(filename=filename, code_content=code_content, prompt=prompt)
+    config_yaml_content = generate_config_yaml(
+        docker_image_tag=f"{Config.GCP_ARTIFACT_REGISTRY}/{Config.GCP_PROJECT_ID}/{Config.GCP_ARTIFACT_REGISTRY_REPO}/{service_name}:latest",
+        dockerfile_content=dockerfile_content,
+        pod_name=service_name,
+        prompt=prompt
+    )
     
     # Create a K8s service and perform deployment
     service = K8sService(
+        service_name=service_name,
         dockerfile_content=dockerfile_content,
-        config_yaml_content=config_yaml_content
+        config_yaml_content=config_yaml_content,
     )
     status = service.run()
 
@@ -68,24 +76,24 @@ def deploy_handle(prompt: str, filename: str, file_content: str) -> CodeResponse
 class K8sService:
     def __init__(
         self,
+        service_name: str,
         dockerfile_content: str,
         config_yaml_content: str,
-        name: Optional[str] = None
     ):
         """
         Initialize the Kubernetes service and write the Dockerfile and config.yaml into the service directory.
 
         Args:
+            service_name (str): The name of the service.
             dockerfile_content (str): The content of the Dockerfile.
             config_yaml_content (str): The content of the Kubernetes deployment config.yaml.
-            name (Optional[str]): The service name. If not provided, a UUID will be used.
         """
-        self.name = str(uuid.uuid4()) if name is None else name
+        self.service_name = service_name
         self.dockerfile_content = dockerfile_content
         self.config_yaml_content = config_yaml_content
 
         # Create the service directory
-        self.service_dir = os.path.join(SAVE_DIR, self.name)
+        self.service_dir = os.path.join(SAVE_DIR, self.service_name)
         os.makedirs(self.service_dir, exist_ok=True)
 
         # Write the Dockerfile
@@ -135,8 +143,8 @@ class K8sService:
         Returns:
             bool: True if all steps succeed; otherwise, False.
         """
-        image_tag = f"{self.name}:latest"
-        registry_tag = f"{Config.GCP_ARTIFACT_REGISTRY}/{Config.GCP_PROJECT_ID}/{Config.GCP_ARTIFACT_REGISTRY_REPO}/{self.name}:latest"
+        image_tag = f"{self.service_name}:latest"
+        registry_tag = f"{Config.GCP_ARTIFACT_REGISTRY}/{Config.GCP_PROJECT_ID}/{Config.GCP_ARTIFACT_REGISTRY_REPO}/{image_tag}"
         commands = [
             f"sudo docker build -t {image_tag} -f {self.dockerfile} .",
             f"sudo docker tag {image_tag} {registry_tag}",
