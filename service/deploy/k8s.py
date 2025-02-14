@@ -17,7 +17,7 @@ from .utils import (
 SAVE_DIR = "tmp"
 DEFAULT_DOCKERFILE = "Dockerfile"
 DEFAULT_CONFIG_YAML = "config.yaml"
-TIMEOUT = 10
+TIMEOUT = 60
 
 @contextmanager
 def change_dir(path: str):
