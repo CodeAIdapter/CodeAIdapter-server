@@ -84,7 +84,7 @@ def api_analyze():
 
         print("Prompt:", code_request.prompt)
         print("File:", code_request.file)
-
+        print("Filename:", code_request.filename)
         
         return jsonify(response), 200
         

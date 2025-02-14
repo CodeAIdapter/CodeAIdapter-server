@@ -21,3 +21,6 @@ tmp/*
 
 # mac
 .DS_Store
+
+# test cases
+/service/TestCase/
