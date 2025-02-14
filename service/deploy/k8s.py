@@ -49,6 +49,7 @@ def deploy_handle(prompt: str, filename: str, file_content: str) -> CodeResponse
     )
     
     # Create a K8s service and perform deployment
+    import objprint
     service = K8sService(
         service_name=service_name,
         dockerfile_content=dockerfile_content,
@@ -56,6 +57,9 @@ def deploy_handle(prompt: str, filename: str, file_content: str) -> CodeResponse
     )
     status = service.run()
 
+    with open("run.log", "w") as f:
+        f.write(objprint.objstr(service))
+    
     # Generate a deployment report
     report = generate_report(
         dockerfile_content=dockerfile_content,

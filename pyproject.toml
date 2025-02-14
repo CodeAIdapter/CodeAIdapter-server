@@ -16,6 +16,9 @@ pexpect = "^4.9.0"
 flask-cors = "^5.0.0"
 
 
+[tool.poetry.group.dev.dependencies]
+objprint = "^0.3.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
