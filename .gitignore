@@ -16,4 +16,6 @@ poetry.lock
 __pycache__
 
 # test cases
-./service/TestCase
+/service/TestCase/
+
+*.DS_Store
