@@ -10,7 +10,7 @@ class OpenAIChat(LLMBase):
     @classmethod
     def _initialize(cls):
         if not cls._initialized:
-            cls._client = openai.OpenAI()
+            cls._client = openai.OpenAI(api_key=Config.OPENAI_API_KEY)
             cls._initialized = True
 
     @classmethod
