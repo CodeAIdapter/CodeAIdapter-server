@@ -208,6 +208,7 @@ def StartProcess(code, task, usr_prompt):
             response_json = fix_code_with_llm(response_json,result,usr_prompt)
             result,status = run_code(response_json)
         
+        subprocess.run("docker rmi $(docker images -q)", shell=True)
         return return_code_response(code_response,response_json,result,status)
 
 
