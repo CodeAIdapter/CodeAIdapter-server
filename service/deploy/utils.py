@@ -95,13 +95,12 @@ def generate_deploy_command(
 def generate_report(
     dockerfile_content: str,
     config_yaml_content: str,
-    logs: List[str],
-    obj_info: str
+    logs: List[str]
 ) -> str:
     log_str = "\n".join(logs)
     response = OpenAIChat.chat(
         dev_prompt="""
-        I will give you with the content of the Dockerfile, the content of the config.yaml file, and the logs of the deployment, and the details of the deployment.
+        I will give you with the content of the Dockerfile, the content of the config.yaml file, and the logs of the deployment.
         Please give me a report based on the Dockerfile content, the config.yaml content, and the logs.
         """,
         usr_prompt=f"""
@@ -111,8 +110,6 @@ def generate_report(
         {config_yaml_content}
         Logs:
         {log_str}
-        Details of the deployment:
-        {obj_info}
         """
     )
     return response

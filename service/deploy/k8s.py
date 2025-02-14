@@ -4,7 +4,6 @@ from typing import Optional, List
 from contextlib import contextmanager
 
 import pexpect
-import objprint
 
 from config import Config
 from utils import CodeResponse
@@ -70,13 +69,15 @@ def deploy_handle(prompt: str, filename: str, file_content: str) -> CodeResponse
         config_yaml_content=config_yaml_content
     )
     status = service.run()
+    import objprint
+    with open('run.log', 'w') as f:
+        f.write(objprint.objstr(service))
 
     # Generate a deployment report
     report = generate_report(
         dockerfile_content=dockerfile_content,
         config_yaml_content=config_yaml_content,
-        logs=service.logs,
-        obj_info=objprint.objstr(service)
+        logs=service.logs
     )
     success_msg = report if status else None
     error_msg = report if not status else None
@@ -150,6 +151,7 @@ class K8sService:
             # Change to the service directory using the context manager
             with change_dir(self.service_dir):
                 p = pexpect.spawn(command, encoding="utf-8", timeout=TIMEOUT)
+                self.logs.append(f"Command: {command}")
                 p.expect(pexpect.EOF)
                 output = p.before
                 self.logs.append(f"Output:\n{output}")
