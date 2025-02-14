@@ -12,6 +12,7 @@ python-dotenv = "^1.0.1"
 google-cloud = "^0.34.0"
 google-cloud-aiplatform = "^1.80.0"
 openai = "^1.62.0"
+pexpect = "^4.9.0"
 flask-cors = "^5.0.0"
 
 
