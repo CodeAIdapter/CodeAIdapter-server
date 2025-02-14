@@ -209,18 +209,29 @@ class K8sService:
         # Wait for the pod to appear (check up to 5 times, every 2 seconds)
         pod_found = False
         for _ in range(5):
-            p = pexpect.spawn(f"kubectl get pods | grep {self.service_name}", encoding="utf-8")
-            p.expect(pexpect.EOF)
-            if p.before:
+            # Spawn a bash shell so that the pipe is handled correctly.
+            command = f"kubectl get pods | grep {self.service_name}"
+            p = pexpect.spawn("/bin/bash", ["-c", command], encoding="utf-8")
+            try:
+                # Wait until the command completes (with a timeout of 5 seconds)
+                p.expect(pexpect.EOF, timeout=5)
+            except pexpect.exceptions.TIMEOUT:
+                p.close()
+                time.sleep(2)
+                continue
+
+            output = p.before.strip()
+            p.close()
+            if output:
                 pod_found = True
                 break
-            p.close()
+
             time.sleep(2)
+
         if not pod_found:
             self.logs.append(f"Pod {self.service_name} not found.")
             return False
-
-        # Now that the pod exists, retrieve its logs
+            
         logs_cmd = f"kubectl logs {self.service_name}"
         if not self._execute_command(logs_cmd):
             self.logs.append(f"Failed executing: {logs_cmd}")
