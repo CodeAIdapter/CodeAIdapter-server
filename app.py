@@ -31,13 +31,15 @@ def index():
 def api_analyze():
     try:
         data = request.get_json(force=True)
-        print("Received data:", data)  # 打印接收到的數據
+
+        print('[app.py] Received data:', file=sys.stderr)
+        for key, value in data.items(): print(f"{key}: {value}", file=sys.stderr)
+
         code_request = CodeRequest(
             prompt=data.get("prompt"),
             file=data.get("file"),
             filename=data.get("filename"),
         )
-        print(code_request, file=sys.stderr)
 
         cs = {
             1: "版本轉換",
@@ -59,13 +61,15 @@ def api_analyze():
         if code_request.filename: usr_prot += f'source file name: {code_request.filename}\n'
         if code_request.file: usr_prot += f'source code: \n{code_request.file}\n'
 
-        print('prompt:', dev_prot, usr_prot, file=sys.stderr)
-
-        # return "NO WAY!\n"
+        print('[dev prompt]', file=sys.stderr)
+        print(dev_prot+'\n', file=sys.stderr)
+        print('[user prompt]', file=sys.stderr)
+        print(usr_prot+'\n', file=sys.stderr)
 
         gpt = OpenAIChat()
         response = gpt.chat(dev_prot, usr_prot)
-        print('response: ', response, file=sys.stderr)
+        print('[gpt response]', file=sys.stderr)
+        print(response+'\n', file=sys.stderr)
 
         if not isinstance(response, str):
             raise ValueError(f'Invalid response by llm: {response}')
@@ -114,9 +118,13 @@ def api_analyze():
                         "message": prefix + code_res.success_msg
                     }
         
+        print('[server response]', file=sys.stderr)
+        for key, value in response.items(): print(f"{key}: {value}", file=sys.stderr)
+
         return jsonify(response), 200
         
     except Exception as e:
+        print('[error]', e, file=sys.stderr)
         return jsonify({
             "status": "error",
             "message": str(e)
