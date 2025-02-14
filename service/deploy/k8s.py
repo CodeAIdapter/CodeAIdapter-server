@@ -4,6 +4,7 @@ from typing import Optional, List
 from contextlib import contextmanager
 
 import pexpect
+import objprint
 
 from config import Config
 from utils import CodeResponse
@@ -70,19 +71,12 @@ def deploy_handle(prompt: str, filename: str, file_content: str) -> CodeResponse
     )
     status = service.run()
 
-    # Optionally write a log of the service object for debugging
-    try:
-        import objprint  # Make sure objprint is installed or replace with alternative logging
-        with open("run.log", "w", encoding="utf-8") as f:
-            f.write(objprint.objstr(service))
-    except ImportError:
-        service.logs.append("objprint module not found. Skipping detailed object logging.")
-
     # Generate a deployment report
     report = generate_report(
         dockerfile_content=dockerfile_content,
         config_yaml_content=config_yaml_content,
-        logs=service.logs
+        logs=service.logs,
+        obj_info=objprint.objstr(service)
     )
     success_msg = report if status else None
     error_msg = report if not status else None

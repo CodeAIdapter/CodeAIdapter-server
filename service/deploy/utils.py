@@ -81,7 +81,7 @@ def generate_deploy_command(
         dev_prompt="""
         I will give you with the content of the config.yaml file.
         Please give me the command to deploy the service based on the config.yaml content.
-        And get pods output by the command.
+        And use `kubectl logs <pod-name>` in the end to get the logs.
         Don't include any comments or other information.
         Don't use Markdown or any other formatting.
         """,
@@ -95,14 +95,14 @@ def generate_deploy_command(
 def generate_report(
     dockerfile_content: str,
     config_yaml_content: str,
-    logs: List[str]
+    logs: List[str],
+    obj_info: str
 ) -> str:
     log_str = "\n".join(logs)
     response = OpenAIChat.chat(
         dev_prompt="""
-        I will give you with the content of the Dockerfile, the content of the config.yaml file, and the logs of the deployment.
+        I will give you with the content of the Dockerfile, the content of the config.yaml file, and the logs of the deployment, and the details of the deployment.
         Please give me a report based on the Dockerfile content, the config.yaml content, and the logs.
-        Must include the Dockerfile content and its full name of Docker image that pushed to the registry, the config.yaml content, the pods name and its output.
         """,
         usr_prompt=f"""
         Dockerfile content:
@@ -111,6 +111,8 @@ def generate_report(
         {config_yaml_content}
         Logs:
         {log_str}
+        Details of the deployment:
+        {obj_info}
         """
     )
     return response
