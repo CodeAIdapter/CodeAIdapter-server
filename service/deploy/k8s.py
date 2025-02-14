@@ -68,9 +68,9 @@ def deploy_handle(prompt: str, filename: str, file_content: str) -> CodeResponse
         config_yaml_content=config_yaml_content
     )
     status = service.run()
-    import objprint
-    with open('run.log', 'w') as f:
-        f.write(objprint.objstr(service))
+    # import objprint
+    # with open('run.log', 'w') as f:
+    #     f.write(objprint.objstr(service))
 
     # Generate a deployment report
     report = generate_report(
@@ -135,35 +135,41 @@ class K8sService:
 
         self.logs: List[str] = []
 
-    def _execute_command(self, command: str) -> bool:
+    def _execute_command(self, command: str, log: bool = True) -> bool:
         """
         Execute a shell command using pexpect within the service directory and log its output.
 
         Args:
             command (str): The command to execute.
+            log (bool): Whether to log the command and its output (default is True).
 
         Returns:
             bool: True if the command executes successfully; otherwise, False.
         """
         try:
-            self.logs.append(f"Executing command: {command}")
+            if log:
+                self.logs.append(f"Executing command: {command}")
             # Change to the service directory using the context manager
             with change_dir(self.service_dir):
                 p = pexpect.spawn(command, encoding="utf-8", timeout=TIMEOUT)
-                self.logs.append(f"Command: {command}")
                 p.expect(pexpect.EOF)
                 output = p.before
-                self.logs.append(f"Output:\n{output}")
+                if log:
+                    self.logs.append(f"Output:\n{output}")
                 p.close()
                 if p.exitstatus != 0:
-                    self.logs.append(f"Error: Command '{command}' exited with status {p.exitstatus}")
+                    if log:
+                        self.logs.append(f"Error: Command '{command}' exited with status {p.exitstatus}")
                     return False
             return True
+
         except pexpect.TIMEOUT as e:
-            self.logs.append(f"Command '{command}' timed out after {TIMEOUT}s: {str(e)}")
+            if log:
+                self.logs.append(f"Command '{command}' timed out after {TIMEOUT}s: {str(e)}")
             return False
         except Exception as e:
-            self.logs.append(f"Exception while executing command '{command}': {str(e)}")
+            if log:
+                self.logs.append(f"Exception while executing command '{command}': {str(e)}")
             return False
 
     def __docker_push(self) -> bool:
@@ -198,19 +204,24 @@ class K8sService:
         Returns:
             bool: True if the deployment is successful; otherwise, False.
         """
-        # Apply the Kubernetes configuration
+        # Apply the configuration first
         apply_cmd = f"kubectl apply -f {DEFAULT_CONFIG_YAML}"
         if not self._execute_command(apply_cmd):
             self.logs.append(f"Failed executing: {apply_cmd}")
             return False
 
-        # Wait for the pod to be ready
-        wait_cmd = f"kubectl wait --for=condition=Ready pod/{self.service_name} --timeout=60s"
-        if not self._execute_command(wait_cmd):
-            self.logs.append(f"Pod {self.service_name} did not become ready within the timeout period.")
+        # Wait for the pod to appear (check up to 5 times, every 2 seconds)
+        pod_found = False
+        for _ in range(5):
+            if self._execute_command(f"kubectl get pods | grep {self.service_name}", log=False):
+                pod_found = True
+                break
+            time.sleep(2)
+        if not pod_found:
+            self.logs.append(f"Pod {self.service_name} not found.")
             return False
 
-        # Once the pod is ready, retrieve its logs
+        # Now that the pod exists, retrieve its logs
         logs_cmd = f"kubectl logs {self.service_name}"
         if not self._execute_command(logs_cmd):
             self.logs.append(f"Failed executing: {logs_cmd}")

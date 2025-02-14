@@ -84,6 +84,11 @@ def generate_report(
         dev_prompt="""
         I will give you with the content of the Dockerfile, the content of the config.yaml file, and the logs of the deployment.
         Please give me a report based on the Dockerfile content, the config.yaml content, and the logs.
+        Must include the following:
+        - Dockerfile content
+        - Pod name
+        - Pod logs
+        Alternatively, you can provide a summary of the deployment.
         """,
         usr_prompt=f"""
         Dockerfile content:
