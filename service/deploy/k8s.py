@@ -1,6 +1,5 @@
 import os
 import uuid
-import time
 from typing import Optional, List
 from contextlib import contextmanager
 
@@ -199,16 +198,25 @@ class K8sService:
         Returns:
             bool: True if the deployment is successful; otherwise, False.
         """
-        commands = [
-            f"kubectl apply -f {DEFAULT_CONFIG_YAML}",
-            f"kubectl logs {self.service_name}"
-        ]
-        for cmd in commands:
-            time.sleep(5)  # Wait for the service to be ready
-            if not self._execute_command(cmd):
-                self.logs.append(f"Failed executing: {cmd}")
-                return False
-        return True
+        # Apply the Kubernetes configuration
+        apply_cmd = f"kubectl apply -f {DEFAULT_CONFIG_YAML}"
+        if not self._execute_command(apply_cmd):
+            self.logs.append(f"Failed executing: {apply_cmd}")
+            return False
+
+        # Wait for the pod to be ready
+        wait_cmd = f"kubectl wait --for=condition=Ready pod/{self.service_name} --timeout=60s"
+        if not self._execute_command(wait_cmd):
+            self.logs.append(f"Pod {self.service_name} did not become ready within the timeout period.")
+            return False
+
+        # Once the pod is ready, retrieve its logs
+        logs_cmd = f"kubectl logs {self.service_name}"
+        if not self._execute_command(logs_cmd):
+            self.logs.append(f"Failed executing: {logs_cmd}")
+            return False
+
+    return True
 
     def run(self) -> bool:
         """
