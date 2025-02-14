@@ -216,7 +216,7 @@ class K8sService:
             self.logs.append(f"Failed executing: {logs_cmd}")
             return False
 
-    return True
+        return True
 
     def run(self) -> bool:
         """
