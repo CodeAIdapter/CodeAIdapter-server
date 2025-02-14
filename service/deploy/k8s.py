@@ -208,6 +208,7 @@ class K8sService:
 
         # Wait for the pod to appear (check up to 5 times, every 2 seconds)
         pod_found = False
+        search_pod_name = ""
         for _ in range(5):
             # Use a bash shell to handle the pipe
             command = f"kubectl get pods | grep {self.service_name}"
@@ -226,6 +227,8 @@ class K8sService:
                 # Check if the output contains "CrashLoopBackOff"
                 if "CrashLoopBackOff" in output or "Completed" in output:
                     pod_found = True
+                    search_pod_name = output.split()[0]
+                    self.logs.append(f"Pod {search_pod_name} found.")
                     break
 
             time.sleep(2)
@@ -235,7 +238,7 @@ class K8sService:
             return False
 
         # Now that the pod exists, retrieve its logs
-        logs_cmd = f"kubectl logs {self.service_name}"
+        logs_cmd = f"kubectl logs {search_pod_name}"
         if not self._execute_command(logs_cmd):
             self.logs.append(f"Failed executing: {logs_cmd}")
             return False
