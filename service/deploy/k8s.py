@@ -1,5 +1,6 @@
 import os
 import uuid
+import time
 from typing import Optional, List
 from contextlib import contextmanager
 
@@ -203,6 +204,7 @@ class K8sService:
             f"kubectl logs {self.service_name}"
         ]
         for cmd in commands:
+            time.sleep(5)  # Wait for the service to be ready
             if not self._execute_command(cmd):
                 self.logs.append(f"Failed executing: {cmd}")
                 return False
