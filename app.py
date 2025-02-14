@@ -74,36 +74,43 @@ def api_analyze():
             else:
                 ret_msg = "抱歉，目前不支援您的需求\n\n"
             ret_msg += intro
-            return ret_msg, 200
-        
-        if class_code not in cs:
-            raise ValueError(f'Invalid class code: {class_code}')
-        
-        assert 1 <= class_code <= 5
-        if class_code < 5:
-            task = "B"
-            if class_code == 1:
-                task = "A1"
-            elif class_code == 2:  
-                task = "A2"
-            elif class_code == 3:
-                task = "A3"
-            code_res = TSID.StartProcess(code_request.file , task, code_request.prompt)
-        else:
-            code_res = k8s.deploy_handle(code_request.prompt, code_request.filename, code_request.file)
-        
-        if code_res.status == False:
             response = {
                 "file": "",
                 "filename": "",
-                "message": code_res.error_msg
+                "message": ret_msg
             }
+        
         else:
-            response = {
-                "file": code_res.file,
-                "filename": code_res.filename,
-                "message": code_res.success_msg
-            }
+                if class_code not in cs:
+                    raise ValueError(f'Invalid class code: {class_code}')
+                
+                assert 1 <= class_code <= 5
+                if class_code < 5:
+                    task = "B"
+                    if class_code == 1:
+                        task = "A1"
+                    elif class_code == 2:  
+                        task = "A2"
+                    elif class_code == 3:
+                        task = "A3"
+                    code_res = TSID.StartProcess(code_request.file , task, code_request.prompt)
+                    prefix = "已成功完成程式轉換，執行結果：\n"
+                else:
+                    code_res = k8s.deploy_handle(code_request.prompt, code_request.filename, code_request.file)
+                    prefix = "部署成功：\n"
+        
+                if code_res.status == False:
+                    response = {
+                        "file": "",
+                        "filename": "",
+                        "message": "抱歉，目前無法完成您的需求。\nerror message:\n" + code_res.error_msg
+                    }
+                else:
+                    response = {
+                        "file": code_res.file,
+                        "filename": code_res.filename,
+                        "message": prefix + code_res.success_msg
+                    }
         
         return jsonify(response), 200
         
