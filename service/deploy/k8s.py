@@ -199,7 +199,10 @@ class K8sService:
         Returns:
             bool: True if the deployment is successful; otherwise, False.
         """
-        command = generate_deploy_command(config_yaml_content=self.config_yaml_content)
+        command = [
+            f"kubectl apply -f {DEFAULT_CONFIG_YAML}",
+            f"kubectl logs {self.service_name}"
+        ]
         if not self._execute_command(command):
             self.logs.append(f"Deployment failed with command: {command}")
             return False

@@ -74,24 +74,6 @@ def generate_config_yaml(
     )
     return response
 
-def generate_deploy_command(
-    config_yaml_content: str
-) -> str:
-    response = OpenAIChat.chat(
-        dev_prompt="""
-        I will give you with the content of the config.yaml file.
-        Please give me the command to deploy the service based on the config.yaml content.
-        And use `kubectl logs <pod-name>` in the end to get the logs.
-        Don't include any comments or other information.
-        Don't use Markdown or any other formatting.
-        """,
-        usr_prompt=f"""
-        Config.yaml content:
-        {config_yaml_content}
-        """
-    )
-    return response
-
 def generate_report(
     dockerfile_content: str,
     config_yaml_content: str,
