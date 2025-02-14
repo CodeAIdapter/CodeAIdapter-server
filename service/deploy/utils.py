@@ -74,23 +74,6 @@ def generate_config_yaml(
     )
     return response
 
-def generate_deploy_command(
-    config_yaml_content: str
-) -> str:
-    response = OpenAIChat.chat(
-        dev_prompt="""
-        I will give you with the content of the config.yaml file.
-        Please give me the command to deploy the service based on the config.yaml content.
-        Don't include any comments or other information.
-        Don't use Markdown or any other formatting.
-        """,
-        usr_prompt=f"""
-        Config.yaml content:
-        {config_yaml_content}
-        """
-    )
-    return response
-
 def generate_report(
     dockerfile_content: str,
     config_yaml_content: str,
@@ -101,6 +84,12 @@ def generate_report(
         dev_prompt="""
         I will give you with the content of the Dockerfile, the content of the config.yaml file, and the logs of the deployment.
         Please give me a report based on the Dockerfile content, the config.yaml content, and the logs.
+        Must include the following:
+        - Dockerfile content
+        - Docker image tag that pushed to the registry
+        - Pod name
+        - Pod logs
+        Alternatively, you can provide a summary of the deployment.
         """,
         usr_prompt=f"""
         Dockerfile content:

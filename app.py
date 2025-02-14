@@ -61,6 +61,8 @@ def api_analyze():
 
         print('prompt:', dev_prot, usr_prot, file=sys.stderr)
 
+        # return "NO WAY!\n"
+
         gpt = OpenAIChat()
         response = gpt.chat(dev_prot, usr_prot)
         print('response: ', response, file=sys.stderr)
