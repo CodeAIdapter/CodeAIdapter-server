@@ -59,6 +59,8 @@ def api_analyze():
 
         print('prompt:', dev_prot, usr_prot, file=sys.stderr)
 
+        # return "NO WAY!\n"
+
         gpt = OpenAIChat()
         response = gpt.chat(dev_prot, usr_prot)
         print('response: ', response, file=sys.stderr)
@@ -95,4 +97,4 @@ def api_analyze():
         }), 400
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    app.run(host="0.0.0.0", port=8080, debug=False)
