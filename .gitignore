@@ -14,3 +14,6 @@ poetry.lock
 
 # python cache
 __pycache__
+
+# test cases
+./service/TestCase
