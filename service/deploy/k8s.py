@@ -98,6 +98,8 @@ class K8sService:
             dockerfile_content (str): The content of the Dockerfile.
             config_yaml_content (str): The content of the Kubernetes deployment config.yaml.
         """
+        self.root = os.getcwd()
+
         self.service_name = service_name
         self.code_filename = code_filename
         self.code_content = code_content
@@ -134,9 +136,11 @@ class K8sService:
         Returns:
             bool: True if the command executes successfully; otherwise, False.
         """
+        os.chdir(self.service_dir)
         try:
             self.logs.append(f"Executing command: {command}")
             p = pexpect.spawn(command, encoding="utf-8", timeout=TIMEOUT)
+            os.chdir(self.root)
             p.expect(pexpect.EOF)
             output = p.before
             self.logs.append(f"Output:\n{output}")
@@ -166,6 +170,7 @@ class K8sService:
             f"sudo docker tag {image_tag} {registry_tag}",
             f"sudo docker push {registry_tag}"
         ]
+
         for cmd in commands:
             if not self._execute_command(cmd):
                 self.logs.append(f"Failed executing: {cmd}")
