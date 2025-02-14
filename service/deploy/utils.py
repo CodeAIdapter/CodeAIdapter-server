@@ -86,6 +86,7 @@ def generate_report(
         Please give me a report based on the Dockerfile content, the config.yaml content, and the logs.
         Must include the following:
         - Dockerfile content
+        - Docker image tag that pushed to the registry
         - Pod name
         - Pod logs
         Alternatively, you can provide a summary of the deployment.
