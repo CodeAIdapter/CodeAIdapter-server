@@ -166,6 +166,7 @@ def return_code_response(code_response,response_json,result,status):
     code = response_dict["code"]
     language = response_dict["language"]
     java_class_name = response_dict["class_name"]
+    docker_image = response_dict["docker_image"]
 
     code_response.file = code
     if language == "java":
@@ -178,6 +179,8 @@ def return_code_response(code_response,response_json,result,status):
     else:
         code_response.error_msg = result
         code_response.status = False
+    # subprocess.run(f"docker rmi -f $(docker images --filter=reference='{docker_image}' -q)", shell=True)
+    subprocess.run(f"docker rmi -f $(docker images -q)", shell=True)
     return code_response
 
 
@@ -196,7 +199,6 @@ def StartProcess(code, task, usr_prompt):
 
         response_json = processing_tasks(code, language, task,usr_prompt)
 
-        
         result,status = run_code(response_json)
         
     
@@ -208,7 +210,6 @@ def StartProcess(code, task, usr_prompt):
             response_json = fix_code_with_llm(response_json,result,usr_prompt)
             result,status = run_code(response_json)
         
-        subprocess.run("docker rmi $(docker images -q)", shell=True)
         return return_code_response(code_response,response_json,result,status)
 
 
