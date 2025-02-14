@@ -6,6 +6,8 @@ from flask_cors import CORS
 from dataclasses import dataclass
 from typing import List, Optional
 from utils.llm.openai import OpenAIChat
+from service import TSID
+from service.deploy import k8s
 
 from utils import CodeRequest
 
@@ -74,17 +76,34 @@ def api_analyze():
             ret_msg += intro
             return ret_msg, 200
         
-        response = {
-            "status": "success",
-            "message": "Analysis completed",
-            "data": {
-                "prompt": "您的需求已被分類為：{}\n\n".format(cs[class_code])
+        if class_code not in cs:
+            raise ValueError(f'Invalid class code: {class_code}')
+        
+        assert 1 <= class_code <= 5
+        if class_code < 5:
+            task = "B"
+            if class_code == 1:
+                task = "A1"
+            elif class_code == 2:  
+                task = "A2"
+            elif class_code == 3:
+                task = "A3"
+            code_res = TSID.StartProcess(code_request.file , task, code_request.prompt)
+        else:
+            code_res = k8s.deploy_handle(code_request.prompt, code_request.filename, code_request.file)
+        
+        if code_res.status == False:
+            response = {
+                "file": "",
+                "filename": "",
+                "message": code_res.error_msg
             }
-        }
-
-        print("Prompt:", code_request.prompt)
-        print("File:", code_request.file)
-        print("Filename:", code_request.filename)
+        else:
+            response = {
+                "file": code_res.file,
+                "filename": code_res.filename,
+                "message": code_res.success_msg
+            }
         
         return jsonify(response), 200
         
@@ -95,4 +114,4 @@ def api_analyze():
         }), 400
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    app.run(host="0.0.0.0", port=8080, debug=False)
