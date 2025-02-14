@@ -14,3 +14,10 @@ poetry.lock
 
 # python cache
 __pycache__
+
+# tmp
+tmp/*
+!tmp/.gitkeep
+
+# mac
+.DS_Store
