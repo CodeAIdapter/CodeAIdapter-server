@@ -20,7 +20,7 @@ DEFAULT_CONFIG_YAML = "config.yaml"
 TIMEOUT = 10
 
 
-def deploy_handle(prompt: str, file: str) -> CodeResponse:
+def deploy_handle(prompt: str, filename: str, file_content: str) -> CodeResponse:
     """
     Handle deployment request:
       1. Extract code content from the file.
@@ -30,14 +30,15 @@ def deploy_handle(prompt: str, file: str) -> CodeResponse:
 
     Args:
         prompt (str): Deployment prompt message.
-        file (str): The path of the file from which to extract code.
+        filename (str): The path of the file from which to extract code.
+        file_content (str): The content of the file.
 
     Returns:
         CodeResponse: A response object containing deployment status, logs, and file information.
     """
     # Extract code content from the file
-    code_content = code_extract(file=file)
-    dockerfile_content = generate_dockerfile(filename=file, code_content=code_content)
+    code_content = code_extract(filename=filename, code_content=file_content)
+    dockerfile_content = generate_dockerfile(filename=filename, code_content=code_content)
     config_yaml_content = generate_config_yaml(prompt=prompt)
     
     # Create a K8s service and perform deployment

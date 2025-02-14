@@ -2,10 +2,7 @@ from typing import List
 
 from utils.llm import OpenAIChat
 
-def code_extract(filename: str) -> str:
-    with open(filename, "r", encoding="utf-8") as f:
-        code_content = f.read()
-        
+def code_extract(filename: str, code_content: str) -> str:        
     response = OpenAIChat.chat(
         dev_prompt="""
         Please only give me the code content from the source code.
