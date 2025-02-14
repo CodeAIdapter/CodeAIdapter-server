@@ -11,7 +11,6 @@ from .utils import (
     code_extract,
     generate_dockerfile,
     generate_config_yaml,
-    generate_deploy_command,
     generate_report
 )
 
