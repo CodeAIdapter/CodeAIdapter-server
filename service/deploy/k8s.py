@@ -52,8 +52,10 @@ def deploy_handle(prompt: str, filename: str, file_content: str) -> CodeResponse
     import objprint
     service = K8sService(
         service_name=service_name,
+        code_filename=filename,
+        code_content=file_content,
         dockerfile_content=dockerfile_content,
-        config_yaml_content=config_yaml_content,
+        config_yaml_content=config_yaml_content
     )
     status = service.run()
 
@@ -81,6 +83,8 @@ class K8sService:
     def __init__(
         self,
         service_name: str,
+        code_filename: str,
+        code_content: str,
         dockerfile_content: str,
         config_yaml_content: str,
     ):
@@ -89,10 +93,14 @@ class K8sService:
 
         Args:
             service_name (str): The name of the service.
+            code_filename (str): The name of the code file.
+            code_content (str): The content of the code file.
             dockerfile_content (str): The content of the Dockerfile.
             config_yaml_content (str): The content of the Kubernetes deployment config.yaml.
         """
         self.service_name = service_name
+        self.code_filename = code_filename
+        self.code_content = code_content
         self.dockerfile_content = dockerfile_content
         self.config_yaml_content = config_yaml_content
 
@@ -109,6 +117,10 @@ class K8sService:
         self.config_yaml = os.path.join(self.service_dir, DEFAULT_CONFIG_YAML)
         with open(self.config_yaml, "w", encoding="utf-8") as f:
             f.write(config_yaml_content)
+
+        # Write the code file
+        with open(os.path.join(self.service_dir, self.code_filename), "w", encoding="utf-8") as f:
+            f.write(self.code_content)
 
         self.logs: List[str] = []
 
