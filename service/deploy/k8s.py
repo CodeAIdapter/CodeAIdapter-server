@@ -198,13 +198,14 @@ class K8sService:
         Returns:
             bool: True if the deployment is successful; otherwise, False.
         """
-        command = [
+        commands = [
             f"kubectl apply -f {DEFAULT_CONFIG_YAML}",
             f"kubectl logs {self.service_name}"
         ]
-        if not self._execute_command(command):
-            self.logs.append(f"Deployment failed with command: {command}")
-            return False
+        for cmd in commands:
+            if not self._execute_command(cmd):
+                self.logs.append(f"Failed executing: {cmd}")
+                return False
         return True
 
     def run(self) -> bool:
