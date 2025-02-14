@@ -136,41 +136,36 @@ class K8sService:
 
         self.logs: List[str] = []
 
-    def _execute_command(self, command: str, log: bool = True) -> bool:
+    def _execute_command(self, command: str) -> bool:
         """
         Execute a shell command using pexpect within the service directory and log its output.
 
         Args:
             command (str): The command to execute.
-            log (bool): Whether to log the command and its output (default is True).
 
         Returns:
             bool: True if the command executes successfully; otherwise, False.
         """
         try:
-            if log:
-                self.logs.append(f"Executing command: {command}")
+            self.logs.append(f"Executing command: {command}")
+            
             # Change to the service directory using the context manager
             with change_dir(self.service_dir):
                 p = pexpect.spawn(command, encoding="utf-8", timeout=TIMEOUT)
                 p.expect(pexpect.EOF)
                 output = p.before
-                if log:
-                    self.logs.append(f"Output:\n{output}")
+                self.logs.append(f"Output:\n{output}")
                 p.close()
                 if p.exitstatus != 0:
-                    if log:
-                        self.logs.append(f"Error: Command '{command}' exited with status {p.exitstatus}")
+                    self.logs.append(f"Error: Command '{command}' exited with status {p.exitstatus}")
                     return False
             return True
 
         except pexpect.TIMEOUT as e:
-            if log:
-                self.logs.append(f"Command '{command}' timed out after {TIMEOUT}s: {str(e)}")
+            self.logs.append(f"Command '{command}' timed out after {TIMEOUT}s: {str(e)}")
             return False
         except Exception as e:
-            if log:
-                self.logs.append(f"Exception while executing command '{command}': {str(e)}")
+            self.logs.append(f"Exception while executing command '{command}': {str(e)}")
             return False
 
     def __docker_push(self) -> bool:
@@ -214,10 +209,27 @@ class K8sService:
         # Wait for the pod to appear (check up to 5 times, every 2 seconds)
         pod_found = False
         for _ in range(5):
-            if self._execute_command(f"kubectl get pods | grep {self.service_name}", log=False):
-                pod_found = True
-                break
+            # Use a bash shell to handle the pipe
+            command = f"kubectl get pods | grep {self.service_name}"
+            p = pexpect.spawn("/bin/bash", ["-c", command], encoding="utf-8")
+            try:
+                p.expect(pexpect.EOF, timeout=5)
+            except pexpect.exceptions.TIMEOUT:
+                p.close()
+                time.sleep(2)
+                continue
+
+            output = p.before.strip()
+            p.close()
+
+            if output:
+                # Check if the output contains "CrashLoopBackOff"
+                if "CrashLoopBackOff" in output or "Completed" in output:
+                    pod_found = True
+                    break
+
             time.sleep(2)
+
         if not pod_found:
             self.logs.append(f"Pod {self.service_name} not found.")
             return False
