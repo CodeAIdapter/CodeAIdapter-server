@@ -1,6 +1,7 @@
 import os
 import uuid
 from typing import Optional, List
+from contextlib import contextmanager
 
 import pexpect
 
@@ -19,6 +20,17 @@ DEFAULT_DOCKERFILE = "Dockerfile"
 DEFAULT_CONFIG_YAML = "config.yaml"
 TIMEOUT = 10
 
+@contextmanager
+def change_dir(path: str):
+    """
+    Context manager to change the current working directory and then restore it.
+    """
+    original_dir = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(original_dir)
 
 def deploy_handle(prompt: str, filename: str, file_content: str) -> CodeResponse:
     """
@@ -30,15 +42,15 @@ def deploy_handle(prompt: str, filename: str, file_content: str) -> CodeResponse
 
     Args:
         prompt (str): Deployment prompt message.
-        filename (str): The path of the file from which to extract code.
+        filename (str): The name of the file containing the code.
         file_content (str): The content of the file.
 
     Returns:
         CodeResponse: A response object containing deployment status, logs, and file information.
     """
-    service_name = f"codeaidapter-{str(uuid.uuid4())}"
+    service_name = f"codeaidapter-{uuid.uuid4()}"  # Unique service name using UUID
 
-    # Extract code content from the file
+    # Extract code content (can be further customized by the extraction function)
     code_content = code_extract(filename=filename, code_content=file_content)
     dockerfile_content = generate_dockerfile(filename=filename, code_content=code_content, prompt=prompt)
     config_yaml_content = generate_config_yaml(
@@ -48,8 +60,7 @@ def deploy_handle(prompt: str, filename: str, file_content: str) -> CodeResponse
         prompt=prompt
     )
     
-    # Create a K8s service and perform deployment
-    import objprint
+    # Create a Kubernetes service and perform deployment
     service = K8sService(
         service_name=service_name,
         code_filename=filename,
@@ -59,9 +70,14 @@ def deploy_handle(prompt: str, filename: str, file_content: str) -> CodeResponse
     )
     status = service.run()
 
-    with open("run.log", "w") as f:
-        f.write(objprint.objstr(service))
-    
+    # Optionally write a log of the service object for debugging
+    try:
+        import objprint  # Make sure objprint is installed or replace with alternative logging
+        with open("run.log", "w", encoding="utf-8") as f:
+            f.write(objprint.objstr(service))
+    except ImportError:
+        service.logs.append("objprint module not found. Skipping detailed object logging.")
+
     # Generate a deployment report
     report = generate_report(
         dockerfile_content=dockerfile_content,
@@ -89,36 +105,35 @@ class K8sService:
         config_yaml_content: str,
     ):
         """
-        Initialize the Kubernetes service and write the Dockerfile and config.yaml into the service directory.
+        Initialize the Kubernetes service by writing the code file, Dockerfile, and config.yaml 
+        into a dedicated service directory.
 
         Args:
-            service_name (str): The name of the service.
+            service_name (str): The unique name of the service.
             code_filename (str): The name of the code file.
             code_content (str): The content of the code file.
             dockerfile_content (str): The content of the Dockerfile.
             config_yaml_content (str): The content of the Kubernetes deployment config.yaml.
         """
-        self.root = os.getcwd()
-
         self.service_name = service_name
         self.code_filename = code_filename
         self.code_content = code_content
         self.dockerfile_content = dockerfile_content
         self.config_yaml_content = config_yaml_content
 
-        # Create the service directory
+        # Create the service directory (intermediate directories will be created if missing)
         self.service_dir = os.path.join(SAVE_DIR, self.service_name)
         os.makedirs(self.service_dir, exist_ok=True)
 
         # Write the Dockerfile
         self.dockerfile = os.path.join(self.service_dir, DEFAULT_DOCKERFILE)
         with open(self.dockerfile, "w", encoding="utf-8") as f:
-            f.write(dockerfile_content)
+            f.write(self.dockerfile_content)
         
         # Write the config.yaml file
         self.config_yaml = os.path.join(self.service_dir, DEFAULT_CONFIG_YAML)
         with open(self.config_yaml, "w", encoding="utf-8") as f:
-            f.write(config_yaml_content)
+            f.write(self.config_yaml_content)
 
         # Write the code file
         with open(os.path.join(self.service_dir, self.code_filename), "w", encoding="utf-8") as f:
@@ -128,7 +143,7 @@ class K8sService:
 
     def _execute_command(self, command: str) -> bool:
         """
-        Execute a shell command using pexpect and log its output.
+        Execute a shell command using pexpect within the service directory and log its output.
 
         Args:
             command (str): The command to execute.
@@ -136,18 +151,18 @@ class K8sService:
         Returns:
             bool: True if the command executes successfully; otherwise, False.
         """
-        os.chdir(self.service_dir)
         try:
             self.logs.append(f"Executing command: {command}")
-            p = pexpect.spawn(command, encoding="utf-8", timeout=TIMEOUT)
-            os.chdir(self.root)
-            p.expect(pexpect.EOF)
-            output = p.before
-            self.logs.append(f"Output:\n{output}")
-            p.close()
-            if p.exitstatus != 0:
-                self.logs.append(f"Error: Command '{command}' exited with status {p.exitstatus}")
-                return False
+            # Change to the service directory using the context manager
+            with change_dir(self.service_dir):
+                p = pexpect.spawn(command, encoding="utf-8", timeout=TIMEOUT)
+                p.expect(pexpect.EOF)
+                output = p.before
+                self.logs.append(f"Output:\n{output}")
+                p.close()
+                if p.exitstatus != 0:
+                    self.logs.append(f"Error: Command '{command}' exited with status {p.exitstatus}")
+                    return False
             return True
         except pexpect.TIMEOUT as e:
             self.logs.append(f"Command '{command}' timed out after {TIMEOUT}s: {str(e)}")
@@ -164,7 +179,11 @@ class K8sService:
             bool: True if all steps succeed; otherwise, False.
         """
         image_tag = f"{self.service_name}:latest"
-        registry_tag = f"{Config.GCP_ARTIFACT_REGISTRY}/{Config.GCP_PROJECT_ID}/{Config.GCP_ARTIFACT_REGISTRY_REPO}/{image_tag}"
+        registry_tag = (
+            f"{Config.GCP_ARTIFACT_REGISTRY}/"
+            f"{Config.GCP_PROJECT_ID}/"
+            f"{Config.GCP_ARTIFACT_REGISTRY_REPO}/{image_tag}"
+        )
         commands = [
             f"sudo docker build -t {image_tag} .",
             f"sudo docker tag {image_tag} {registry_tag}",
@@ -179,7 +198,7 @@ class K8sService:
 
     def __docker_deploy(self) -> bool:
         """
-        Deploy using the generated config.yaml file with Kubernetes.
+        Deploy the service using the generated Kubernetes config.yaml file.
 
         Returns:
             bool: True if the deployment is successful; otherwise, False.
@@ -198,16 +217,14 @@ class K8sService:
             bool: True if both push and deploy are successful; otherwise, False.
         """
         self.logs.append("Starting Docker push process...")
-        push_status = self.__docker_push()
-        if not push_status:
+        if not self.__docker_push():
             self.logs.append("Docker push failed. Aborting deployment.")
             return False
-        
+
         self.logs.append("Docker push successful. Starting deployment process...")
-        deploy_status = self.__docker_deploy()
-        if not deploy_status:
+        if not self.__docker_deploy():
             self.logs.append("Deployment process failed.")
             return False
-        
+
         self.logs.append("Deployment successful.")
         return True

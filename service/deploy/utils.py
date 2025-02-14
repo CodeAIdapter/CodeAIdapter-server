@@ -81,6 +81,7 @@ def generate_deploy_command(
         dev_prompt="""
         I will give you with the content of the config.yaml file.
         Please give me the command to deploy the service based on the config.yaml content.
+        And get pods output by the command.
         Don't include any comments or other information.
         Don't use Markdown or any other formatting.
         """,
@@ -101,6 +102,7 @@ def generate_report(
         dev_prompt="""
         I will give you with the content of the Dockerfile, the content of the config.yaml file, and the logs of the deployment.
         Please give me a report based on the Dockerfile content, the config.yaml content, and the logs.
+        Must include the Dockerfile content and its full name of Docker image that pushed to the registry, the config.yaml content, the pods name and its output.
         """,
         usr_prompt=f"""
         Dockerfile content:
