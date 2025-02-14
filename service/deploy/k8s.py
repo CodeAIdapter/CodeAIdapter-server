@@ -210,9 +210,11 @@ class K8sService:
         pod_found = False
         for _ in range(5):
             p = pexpect.spawn(f"kubectl get pods | grep {self.service_name}", encoding="utf-8")
+            p.expect(pexpect.EOF)
             if p.before:
                 pod_found = True
                 break
+            p.close()
             time.sleep(2)
         if not pod_found:
             self.logs.append(f"Pod {self.service_name} not found.")
