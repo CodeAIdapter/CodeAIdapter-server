@@ -166,7 +166,7 @@ class K8sService:
         image_tag = f"{self.service_name}:latest"
         registry_tag = f"{Config.GCP_ARTIFACT_REGISTRY}/{Config.GCP_PROJECT_ID}/{Config.GCP_ARTIFACT_REGISTRY_REPO}/{image_tag}"
         commands = [
-            f"sudo docker build -t {image_tag} -f {self.dockerfile} .",
+            f"sudo docker build -t {image_tag} .",
             f"sudo docker tag {image_tag} {registry_tag}",
             f"sudo docker push {registry_tag}"
         ]
