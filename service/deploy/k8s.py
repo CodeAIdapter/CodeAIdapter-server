@@ -18,7 +18,7 @@ from .utils import (
 SAVE_DIR = "tmp"
 DEFAULT_DOCKERFILE = "Dockerfile"
 DEFAULT_CONFIG_YAML = "config.yaml"
-TIMEOUT = 60
+TIMEOUT = 120
 
 @contextmanager
 def change_dir(path: str):
@@ -212,7 +212,7 @@ class K8sService:
         # Wait for the pod to appear (check up to 5 times, every 2 seconds)
         pod_found = False
         search_pod_name = ""
-        for _ in range(5):
+        for _ in range(15):
             # Use a bash shell to handle the pipe
             command = f"kubectl get pods | grep {self.service_name}"
             p = pexpect.spawn("/bin/bash", ["-c", command], encoding="utf-8")
