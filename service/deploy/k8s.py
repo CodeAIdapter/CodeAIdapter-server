@@ -227,8 +227,8 @@ class K8sService:
             p.close()
 
             if output:
-                # Check if the output contains "CrashLoopBackOff"
-                if "CrashLoopBackOff" in output or "Completed" in output:
+                # Check if the output contains "CrashLoopBackOff" or "Completed"
+                if ("CrashLoopBackOff" in output) or ("Completed" in output):
                     pod_found = True
                     search_pod_name = output.split()[0]
                     self.logs.append(f"Pod {search_pod_name} found.")
@@ -237,6 +237,7 @@ class K8sService:
             time.sleep(2)
 
         if not pod_found:
+            self.logs.append(f"Search pod name: {search_pod_name} not found.")
             self.logs.append(f"Pod {self.service_name} not found.")
             return False
 
