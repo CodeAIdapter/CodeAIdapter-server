@@ -25,10 +25,19 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 @app.route("/")
 def index():
+    """
+    Index route that returns a simple greeting message.
+    """
     return "Hello, World!"
  
 @app.route("/api", methods=["POST"])
 def api_analyze():
+    """
+    API endpoint to analyze the provided code and return the appropriate response.
+
+    Returns:
+        JSON response containing the analyzed result.
+    """
     try:
         data = request.get_json(force=True)
 
