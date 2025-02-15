@@ -136,7 +136,7 @@ class K8sService:
 
         self.logs: List[str] = []
 
-    def _execute_command(self, command: str) -> bool:
+    def _execute_command(self, command: str, max_size: Optional[int] = None) -> bool:
         """
         Execute a shell command using pexpect within the service directory and log its output.
 
@@ -153,7 +153,10 @@ class K8sService:
             with change_dir(self.service_dir):
                 p = pexpect.spawn(command, encoding="utf-8", timeout=TIMEOUT)
                 p.expect(pexpect.EOF)
-                output = p.before
+                if max_size:
+                    output = p.before[-max_size:]
+                else:
+                    output = p.before
                 self.logs.append(f"Output:\n{output}")
                 p.close()
                 if p.exitstatus != 0:
@@ -182,13 +185,13 @@ class K8sService:
             f"{Config.GCP_ARTIFACT_REGISTRY_REPO}/{image_tag}"
         )
         commands = [
-            f"sudo docker build -t {image_tag} .",
+            f"sudo docker build --quiet -t {image_tag} .",
             f"sudo docker tag {image_tag} {registry_tag}",
             f"sudo docker push {registry_tag}"
         ]
 
         for cmd in commands:
-            if not self._execute_command(cmd):
+            if not self._execute_command(cmd, max_size=500):
                 self.logs.append(f"Failed executing: {cmd}")
                 return False
         return True
