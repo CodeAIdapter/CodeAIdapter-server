@@ -24,6 +24,9 @@ TIMEOUT = 120
 def change_dir(path: str):
     """
     Context manager to change the current working directory and then restore it.
+
+    Args:
+        path (str): The path to change to.
     """
     original_dir = os.getcwd()
     os.chdir(path)
@@ -142,6 +145,7 @@ class K8sService:
 
         Args:
             command (str): The command to execute.
+            max_size (Optional[int]): The maximum size of the output to log.
 
         Returns:
             bool: True if the command executes successfully; otherwise, False.
